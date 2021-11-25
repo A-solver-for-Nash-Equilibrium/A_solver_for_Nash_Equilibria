@@ -1,3 +1,5 @@
-A very very basic prototype.
+Updated code is in NESolver/NESolver2.py
 
-I am still working on implementing the method to identify infinitely many NE.
+It can now identify whether a support has infinitely many NE.
+
+Will add some tests later.
