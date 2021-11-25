@@ -1,3 +1,4 @@
+import sys
 import gurobipy as gp
 from gurobipy import GRB
 import numpy as np
@@ -108,9 +109,11 @@ class NESolver1:
         w2 = lpm.getVarByName('w2')
 
         support_a = support[0]  # one possible support of player 1, tuple
+        e = sys.float_info.epsilon
+        e = 0.00001
         for i in range(m):
             if i in support_a:
-                # lpm.addConstr(lpm.getVarByName('x[{_i}]'.format(_i=i)) > 0) # not work
+                lpm.addConstr(lpm.getVarByName('x[{_i}]'.format(_i=i)) >= e)
                 lpm.addConstr(w1 - lpm.getVarByName('A*[{_i}]'.format(_i=i)) == 0)
             else:
                 lpm.addConstr(w1 - lpm.getVarByName('A*[{_i}]'.format(_i=i)) >= 0)
@@ -119,7 +122,7 @@ class NESolver1:
         support_b = support[1]  # one possible support of player 1, tuple
         for j in range(n):
             if j in support_b:
-                # lpm.addConstr(lpm.getVarByName('y[{_j}]'.format(_j=j)) != 0) # not work
+                lpm.addConstr(lpm.getVarByName('y[{_j}]'.format(_j=j)) >= e)
                 lpm.addConstr(w2 - lpm.getVarByName('B*[{_j}]'.format(_j=j)) == 0)
             else:
                 lpm.addConstr(w2 - lpm.getVarByName('B*[{_j}]'.format(_j=j)) >= 0)
