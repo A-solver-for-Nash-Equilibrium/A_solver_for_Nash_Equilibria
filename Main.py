@@ -2,8 +2,10 @@ import os
 import sys
 lib_path = os.path.dirname(os.path.abspath(__file__))  # the path that contain NESolver package
 sys.path.insert(0, lib_path)
-from NESolver.NESolver1 import NESolver1
+from NESolver.NESolver2 import NESolver2
 import numpy as np
+import pandas as pd
+
 
 """ Example:
 Enter the number of row player's actions:2
@@ -31,25 +33,23 @@ columns = int(input("Enter the number of column player's actions:"))
 
 A = []
 print("Enter the %s x %s payoff matrix of row player:" % (rows, columns))
-print("separate elements by typing space, separate rows by typing enter")
+print("( separate elements by typing space, separate rows by typing enter )")
 for i in range(rows):
-    A.append(list(map(int, input().rstrip().split())))
+    A.append(list(map(float, input().rstrip().split())))
 
 B = []
 print("Enter the %s x %s payoff matrix of column player:" % (rows, columns))
-print("separate elements by typing space, separate rows by typing enter")
+print("( separate elements by typing space, separate rows by typing enter )")
 for i in range(rows):
-    B.append(list(map(int, input().rstrip().split())))
+    B.append(list(map(float, input().rstrip().split())))
 
 A = np.array(A)
 B = np.array(B)
-
 print("player 1's payoff matrix:")
 print(A)
 print("player 2's payoff matrix:")
 print(B)
-NESolver = NESolver1(A=A, B=B)
+NESolver = NESolver2(A=A, B=B)
 NE = NESolver.find()
-print("This game has {_len} Nash Equilibrium: ".format(_len=len(NE)))
-for e in NE:
-    print(e)
+print("This game has {_len} Nash Equilibrium: ".format(_len=NE['NE_count'].sum()))
+print(NE)
