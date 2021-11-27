@@ -11,13 +11,16 @@
 
 import sys
 from copy import deepcopy
-
 import gurobipy as gp
 from gurobipy import GRB
 import numpy as np
 from itertools import chain, combinations, product
 import pandas as pd
 from numpy import linalg
+
+pd.set_option("display.max_rows", None, "display.max_columns", None)
+pd.set_option('display.expand_frame_repr', False)
+pd.set_option('max_colwidth', None)
 
 eps = 0.00001  # epsilon for strict inequlity
 precision = '.6f'
@@ -76,7 +79,7 @@ class NESolver2:
 
     def __init_lp_model(self):
         """
-        return two basic LP models, each a for a player, same for all the supports
+        return two basic LP models, each for a player, same for all the supports
         x,y --> strategy vector for player 1 and 2
         A* = A.dot(x), B* = B.T.dot(y)
         w1, w2 --> expected payoff for player1 and 2
@@ -119,10 +122,10 @@ class NESolver2:
     def __check_NE_infinity(self, player, support):
         """
         Check whether the player will have infinitely many NE under the support
-        Here, x (player 1) is realted to B, y(player 2) is related to A
+        Here, x (player 1) is realted to payoff matrix B, y(player 2) is related to payoff matrix A
         :param player: int, 1 or 2
         :param support:
-        :return:
+        :return: infinity: boolean
         """
         infinity = False
 
@@ -160,13 +163,11 @@ class NESolver2:
     def __compute_equilibrium_of_one_support(self, support):
         """
         To find equilibrium of a given support
-        Will add the equilibrium in to self.__NE if find one
+        Will update self.__NE_log_dict[support]
         :param
             support: tuple of two tuples ((),()), each is a support for a player
         :return:
-            exist: boolean; whether the given support admit a nash equilibrium
-            equilibrium: None if exist == False.
-                         Otherwise, A list of two tuples [(),()], each is a strategy for a player.
+            {support: self.__NE_log_dict[support]}
         """
 
         # number of actions of each player
@@ -209,8 +210,9 @@ class NESolver2:
             lpm_1.optimize()
             p = tuple(format(lpm_1.getVarByName('x[{_i}]'.format(_i=i)).x, precision) for i in range(m))
         except Exception as err:
-            self.__NE_log_dict[support]['x_count'] = 0
-            # self.__NE_log_dict[support]['x_value'] = None
+            pass
+            # self.__NE_log_dict[support]['x_count'] = 0 # default value
+            # self.__NE_log_dict[support]['x_value'] = None # default value
         else:
             # print(lpm_1.getVars())
             self.__NE_log_dict[support]['w2'] = lpm_1.getVarByName('w2').x
@@ -224,8 +226,9 @@ class NESolver2:
             lpm_2.optimize()
             q = tuple(format(lpm_2.getVarByName('y[{_j}]'.format(_j=j)).x, precision) for j in range(n))
         except Exception as err:
-            self.__NE_log_dict[support]['y_count'] = 0
-            # self.__NE_log_dict[support]['y_value'] = None
+            pass
+            # self.__NE_log_dict[support]['y_count'] = 0 # default value
+            # self.__NE_log_dict[support]['y_value'] = None # default value
         else:
             # print(lpm_2.getVars())
             self.__NE_log_dict[support]['w1'] = lpm_2.getVarByName('w1').x
@@ -252,14 +255,15 @@ class NESolver2:
 
         # convert dict into dataframe for an easy checking
         NE_log_df = pd.DataFrame({'support': self.__NE_log_dict.keys(),
+                                  'NE_count': [self.__NE_log_dict[k]['NE_count'] for k in self.__NE_log_dict],
+                                  'NE_value': [self.__NE_log_dict[k]['NE_value'] for k in self.__NE_log_dict],
+                                  'w1': [self.__NE_log_dict[k]['w1'] for k in self.__NE_log_dict],
+                                  'w2': [self.__NE_log_dict[k]['w2'] for k in self.__NE_log_dict],
                                   'x_value': [self.__NE_log_dict[k]['x_value'] for k in self.__NE_log_dict],
                                   'x_count': [self.__NE_log_dict[k]['x_count'] for k in self.__NE_log_dict],
                                   'y_value': [self.__NE_log_dict[k]['y_value'] for k in self.__NE_log_dict],
                                   'y_count': [self.__NE_log_dict[k]['y_count'] for k in self.__NE_log_dict],
-                                  'NE_value': [self.__NE_log_dict[k]['NE_value'] for k in self.__NE_log_dict],
-                                  'NE_count': [self.__NE_log_dict[k]['NE_count'] for k in self.__NE_log_dict],
-                                  'w1': [self.__NE_log_dict[k]['w1'] for k in self.__NE_log_dict],
-                                  'w2': [self.__NE_log_dict[k]['w2'] for k in self.__NE_log_dict]})
+                                  })
         return NE_log_df
 
     def test(self):
@@ -271,14 +275,17 @@ class NESolver2:
 
 
 def main():
-    pd.set_option("display.max_rows", None, "display.max_columns", None)
-    pd.set_option('display.expand_frame_repr', False)
-    A = np.array([[2, 2], [2, 2]])
-    B = np.array([[3, 3], [3, 4]])
+    A = np.array([[-2, 1.5], [1.5, -2]])
+    B = np.array([[-2, 1.5], [1.5, -2]])
     NESolver = NESolver2(A, B)
-    NE_df=NESolver.find()
-    print(NE_df)
-    NESolver.test()
+    NE=NESolver.find()
+    print("player 1's payoff matrix:")
+    print(A)
+    print("player 2's payoff matrix:")
+    print(B)
+    print("This game has {_len} Nash Equilibrium: ".format(_len=NE['NE_count'].sum()))
+    print(NE)
+    # NESolver.test()
 
 if __name__ == '__main__':
     main()
