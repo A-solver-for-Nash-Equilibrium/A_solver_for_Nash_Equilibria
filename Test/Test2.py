@@ -9,9 +9,6 @@ from NESolver.NESolver2 import NESolver2
 import numpy as np
 import pandas as pd
 
-pd.set_option("display.max_rows", None, "display.max_columns", None)
-pd.set_option('display.expand_frame_repr', False)
-
 def test_game(game_name, A, B):
     print()
     print("*************************")
