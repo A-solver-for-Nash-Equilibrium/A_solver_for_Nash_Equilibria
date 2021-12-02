@@ -1,5 +1,6 @@
-Updated code is in NESolver/NESolver2.py
+Updated code is in NESolver/NESolver2.py and SDADeleter/SDADeleter1.py
 
-It can now identify whether a support has infinitely many NE.
+NESolver2 can now identify whether a support has infinitely many NE. (using rank)
 
-Test/test2.py have some basic test for it. Will add some tests later.
+SDADeleter1 can delete all the strictly dominated actions recursively.
+
