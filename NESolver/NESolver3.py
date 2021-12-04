@@ -1,0 +1,392 @@
+# 2021/12/3
+
+import sys
+from copy import deepcopy
+import gurobipy as gp
+from gurobipy import GRB
+import numpy as np
+from itertools import chain, combinations, product
+import pandas as pd
+from numpy import linalg
+from SDADeleter.SDADeleter1 import SDADeleter1
+
+pd.set_option("display.max_rows", None, "display.max_columns", None)
+pd.set_option('display.expand_frame_repr', False)
+pd.set_option('max_colwidth', None)
+
+
+def powerset(iterable):
+    """
+    Find all the subsets of the input
+    https://stackoverflow.com/questions/1482308/how-to-get-all-subsets-of-a-set-powerset
+    list(powerset("abcd")) --> [() (1,) (2,) (3,) (1,2) (1,3) (2,3) (1,2,3)]
+    """
+    s = list(iterable)
+    # change the range statement to range(1, len(s)+1) to avoid a 0-length combination
+    return chain.from_iterable(combinations(s, r) for r in range(len(s) + 1))
+
+
+def support_numeration(m, n):
+    """
+    calculate all the supports for bi-matirx game using action index starting form 0
+    :param
+        m: list, list of player1's action indices
+        n: list, list of player2's action indices
+    :return:
+        support_m: list, player1's support
+        support_n: list, player2's support
+        support_all: list, all the supports of the two players, i.e. Cartesian product of support_m & support_n
+    """
+    # list of supports (by action index starting from 0) for player1: list of tuples
+    support_m = list(powerset(m))
+    support_m.pop(0)  # delete the empty one
+
+    # same for player 2
+    support_n = list(powerset(n))
+    support_n.pop(0)
+
+    # list of all supports for the game (Cartesian product): [((),()),()], list of 2-d tuples
+    support_all = [s for s in product(support_m, support_n)]  # same as [(a,b) for a in ls1 for b in ls2]
+
+    return support_m, support_n, support_all
+
+
+def find_PNE(A, B):
+    """
+    Find PNE of bi-matrix game
+    :param
+        A: array or dataframe, payoff matrix of player1
+        B: array or dataframe, payoff matrix of player2
+    :return:
+        PNE: list, a list of PNE by action index (dataframe: original index; array: index from 0 for each player)
+    """
+    A = pd.DataFrame(A)
+    B = pd.DataFrame(B)
+    # print(A)
+    # print(B)
+
+    # A: column max location, best response of player1 according to player2's action
+    loc_A = set()
+    # B: row mac location, best response of player2 according to player1's action
+    loc_B = set()
+
+    # find column max for player1
+    col = A.columns.values
+    for c in col:
+        row = A[A[c] == A[c].max()].index.values
+        for r in row:
+            loc_A.add(((r,), (c,),))
+
+    # find row max for player2
+    B = B.T
+    col = B.columns.values
+    for c in col:
+        row = B[B[c] == B[c].max()].index.values
+        for r in row:
+            loc_B.add(((c,), (r,),))
+
+    # print(loc_A)
+    # print(loc_B)
+
+    PNE = sorted(loc_A.intersection(loc_B))
+    # print(PNE)
+    return PNE
+
+
+"""
+settings for NESolver
+"""
+eps = 0.00001  # epsilon for strict inequality
+precision = '.6f'
+log_column_dict = {'x_count': 0, 'x_value': None, 'y_count': 0, 'y_value': None, 'NE_count': 0, 'NE_value': None,
+                   'w1': None, 'w2': None, 'NE_type': -1}
+
+
+class NESolver3:
+    """
+    NESolver to find all the Nash Equilibria of a bi-matrix game
+    """
+
+    def __init__(self, A, B):  # A,B are numpy arrays, payoff matrix
+        """
+        :param
+            A:
+            B:
+        :var
+            self.__NE_log_dict: dict, all supports, all info
+            self.__NE_dict：dict, only NE
+        """
+        self.__A = A
+        self.__B = B
+        self.__lp_1_ini, self.__lp_2_ini = self.__init_lp_model()
+        self.__support = support_numeration(range(A.shape[0]), range(B.shape[1]))[2]
+        # will be updated in self.find()
+        self.__NE_log_dict = {}
+        # will be updated in self.analysis()
+        self.__NE_dict = {}
+        # will be updated in...?
+        self.__NE_info = {'SDA': -1, 'n_PNE': -1, 'n_MNE': -1}
+
+    def __init_lp_model(self):
+        """
+        return two basic LP models, each for a player, same for all the supports
+        x,y --> strategy vector for player 1 and 2
+        A* = A.dot(x), B* = B.T.dot(y)
+        w1, w2 --> expected payoff of player1 and 2
+        """
+        # number of actions of player1 & 2 respectively
+        m = self.__A.shape[0]
+        n = self.__B.shape[1]
+
+        lpm_1 = gp.Model("lpm_1")  # x, w2, B*
+        lpm_2 = gp.Model("lpm_2")  # y, w1, A*
+
+        # suppress optimization information from gurobi
+        lpm_1.Params.LogToConsole = 0
+        lpm_2.Params.LogToConsole = 0
+
+        # strategy
+        x = lpm_1.addMVar(shape=m, name='x')
+        lpm_1.addConstrs((x[i] >= 0 for i in range(m)))  # no need, '>= 0' is default gurobi setting
+        lpm_1.addConstr(x.sum() == 1)
+        y = lpm_2.addMVar(shape=n, name='y')
+        lpm_2.addConstrs((y[j] >= 0 for j in range(n)))
+        lpm_2.addConstr(y.sum() == 1)
+
+        # expected payoff
+        w1 = lpm_2.addVar(lb=-float('inf'), name="w1")
+        w2 = lpm_1.addVar(lb=-float('inf'), name="w2")
+
+        # for compute best response actions
+        A_ = lpm_2.addMVar(lb=-float('inf'), shape=m, name='A*')  # A y
+        lpm_2.addConstr(A_ - self.__A @ y == 0)
+        B_ = lpm_1.addMVar(lb=-float('inf'), shape=n, name='B*')  # B^T x
+        lpm_1.addConstr(B_ - self.__B.T @ x == 0)
+
+        # objective functions
+        lpm_1.setObjective(0)
+        lpm_2.setObjective(0)
+
+        lpm_1.update()
+        lpm_2.update()
+        # print(lpm.getVars())
+        return lpm_1.copy(), lpm_2.copy()
+
+    def __check_NE_infinity(self, player, support):
+        """
+        Check whether the player will have infinitely many NE under the support
+        Here, x (player 1) is realted to payoff matrix B, y(player 2) is related to payoff matrix A
+        :param player: int, 1 or 2
+        :param support:
+        :return: infinity: boolean
+        """
+        infinity = False
+
+        if player == 1:
+            M = self.__B
+        else:
+            M = self.__A
+
+        # delete unneeded coefficients
+        M = M[list(support[0]), :][:, list(support[1])]
+        if player == 1:
+            M = M.T
+
+        # change to the form M c = b, c=[x1, x2,..., w2].T or [y1, y2,..., w1].T
+        top = np.ones(shape=(1, M.shape[1]))
+        M = np.vstack((top, M))
+        right = - np.ones(shape=(M.shape[0], 1))
+        M = np.hstack((M, right))
+        M[0, -1] = 0
+
+        # augmented matrix [M|b]
+        b = np.zeros(shape=(M.shape[0], 1))
+        b[0, 0] = 1
+        Mb = np.hstack((M, b))
+
+        # check whether there are infinitely many solutions
+        n = M.shape[1]
+        rank_M = linalg.matrix_rank(M)
+        rank_Mb = linalg.matrix_rank(Mb)
+        if rank_M == rank_Mb and rank_M < n:
+            infinity = True
+
+        return infinity
+
+    def __compute_equilibrium_of_one_support(self, support):
+        """
+        To find equilibrium of a given support
+        Will create NE_log_dict = {support : log_column_dict} and update the its values
+        :param
+            support: tuple of two tuples ((),()), each is a support of a player
+        :return:
+            NE_log_dict
+        """
+        # create a dict to store computing results
+        NE_log_dict = {support: deepcopy(log_column_dict)}
+
+        # number of actions of each player
+        m = self.__A.shape[0]
+        n = self.__B.shape[1]
+
+        # initialize lpsolver for each support
+        lpm_1 = self.__lp_1_ini.copy()  # x, w2, B*
+        lpm_2 = self.__lp_2_ini.copy()  # y, w1, A*
+        # print(lpm_1.getVars())
+        w1 = lpm_2.getVarByName('w1')
+        w2 = lpm_1.getVarByName('w2')
+
+        # epsilon for x>0, y>0, since gurobi doesn't allow strict inequality
+        e = eps
+
+        # update lp according to support
+        # same for both players
+        support_a = support[0]  # one possible support of player 1, tuple
+        for i in range(m):
+            if i in support_a:
+                lpm_1.addConstr(lpm_1.getVarByName('x[{_i}]'.format(_i=i)) >= e)
+                lpm_2.addConstr(w1 - lpm_2.getVarByName('A*[{_i}]'.format(_i=i)) == 0)
+            else:
+                lpm_1.addConstr(lpm_1.getVarByName('x[{_i}]'.format(_i=i)) == 0)
+                lpm_2.addConstr(w1 - lpm_2.getVarByName('A*[{_i}]'.format(_i=i)) >= 0)
+
+        support_b = support[1]  # one possible support of player 2, tuple
+        for j in range(n):
+            if j in support_b:
+                lpm_2.addConstr(lpm_2.getVarByName('y[{_j}]'.format(_j=j)) >= e)
+                lpm_1.addConstr(w2 - lpm_1.getVarByName('B*[{_j}]'.format(_j=j)) == 0)
+            else:
+                lpm_2.addConstr(lpm_2.getVarByName('y[{_j}]'.format(_j=j)) == 0)
+                lpm_1.addConstr(w2 - lpm_1.getVarByName('B*[{_j}]'.format(_j=j)) >= 0)
+
+        # check whether the support admit NE, the number of NE, update NE_log_dict
+        # same for both players
+        try:
+            lpm_1.optimize()
+            p = tuple(format(lpm_1.getVarByName('x[{_i}]'.format(_i=i)).x, precision) for i in range(m))
+        except Exception as err:
+            pass
+        else:
+            # print(lpm_1.getVars())
+            NE_log_dict[support]['w2'] = lpm_1.getVarByName('w2').x
+            NE_log_dict[support]['x_value'] = p
+            if self.__check_NE_infinity(player=1, support=support):  #
+                NE_log_dict[support]['x_count'] = float('inf')
+            else:
+                NE_log_dict[support]['x_count'] = 1
+
+        try:
+            lpm_2.optimize()
+            q = tuple(format(lpm_2.getVarByName('y[{_j}]'.format(_j=j)).x, precision) for j in range(n))
+        except Exception as err:
+            pass
+        else:
+            # print(lpm_2.getVars())
+            NE_log_dict[support]['w1'] = lpm_2.getVarByName('w1').x
+            NE_log_dict[support]['y_value'] = q
+            if self.__check_NE_infinity(player=2, support=support):
+                NE_log_dict[support]['y_count'] = float('inf')
+            else:
+                NE_log_dict[support]['y_count'] = 1
+
+        # update NE info if this support has NE
+        if NE_log_dict[support]['x_count'] != 0 and NE_log_dict[support]['y_count'] != 0:
+            # update NE_value
+            NE_log_dict[support]['NE_value'] = [p, q]
+            # update NE_count
+            if NE_log_dict[support]['x_count'] == float('inf') or NE_log_dict[support][
+                'y_count'] == float('inf'):
+                NE_log_dict[support]['NE_count'] = float('inf')
+            else:  # (NE_count: 0 / inf / 1)
+                NE_log_dict[support]['NE_count'] = 1
+            # update NE_type
+            if len(support[0]) + len(support[1]) == 2:
+                NE_log_dict[support]['NE_type'] = 'PNE'
+            else:
+                NE_log_dict[support]['NE_type'] = 'MNE'
+        return NE_log_dict
+
+    def find(self):
+        """
+        compute NE of all the support regardless of strictly dominated actions
+        you can see clearly here which player fails to admit a NE via the value of w1 and w2
+        :return:
+        """
+        # , log NE into self.__NE_log_dict
+        for support in self.__support:
+            self.__NE_log_dict[support] = self.__compute_equilibrium_of_one_support(support)[support]
+
+        # convert dict into dataframe for an easy checking
+        NE_log_df = pd.DataFrame({'support': self.__NE_log_dict.keys(),
+                                  'NE_type': [self.__NE_log_dict[k]['NE_type'] for k in self.__NE_log_dict],
+                                  'NE_count': [self.__NE_log_dict[k]['NE_count'] for k in self.__NE_log_dict],
+                                  'NE_value': [self.__NE_log_dict[k]['NE_value'] for k in self.__NE_log_dict],
+                                  'w1': [self.__NE_log_dict[k]['w1'] for k in self.__NE_log_dict],
+                                  'w2': [self.__NE_log_dict[k]['w2'] for k in self.__NE_log_dict],
+                                  'x_value': [self.__NE_log_dict[k]['x_value'] for k in self.__NE_log_dict],
+                                  'x_count': [self.__NE_log_dict[k]['x_count'] for k in self.__NE_log_dict],
+                                  'y_value': [self.__NE_log_dict[k]['y_value'] for k in self.__NE_log_dict],
+                                  'y_count': [self.__NE_log_dict[k]['y_count'] for k in self.__NE_log_dict],
+                                  })
+        return NE_log_df
+
+    def analyze(self, show_info=-1, only_PNE=False):
+        """
+        SDA -> PNE -> MNE
+        :return:
+        """
+        # list of action indices of each player, will delete strictly dominated actions later
+        m_actions = range(self.__A.shape[0])
+        n_actions = range(self.__B.shape[1])
+
+        # check the existence of strictly dominated actions, update payoff matrices
+        SDA = SDADeleter1(self.__A, self.__B)
+        n_SDA, deleted_indices_1, deleted_indices_2 = SDA.get_deleted_actions()
+        new_A, new_B = SDA.get_updated_payoff()
+
+        PNE = find_PNE(new_A, new_B)
+        n_PNE = len(PNE)
+
+        # add PNE to self.__NE_dict
+
+
+        # do support numeration without SDA
+        support = support_numeration(new_A.index.values, new_B.columns.values)[2]
+        if n_PNE == 0:  # if no PNE, then neither player will have pure strategy in MNE
+            new_support = [s for s in support if len(s[0]) > 1 and len(s[1]) > 1]
+        else:  # delete PNE
+            new_support = [s for s in support if len(s[0]) + len(s[1]) > 2]
+
+        if (len(new_support) == 0):
+            n_MNE = 0
+        else:
+            pass
+
+        # update self.__NE_dict
+        self.__NE_info['SDA'] = [deleted_indices_1, deleted_indices_2]
+        self.__NE_info['n_PNE'] = n_PNE
+
+
+
+    def NE_info(self):
+        self.analyze()
+        return self.__NE_info
+
+    def test(self):
+        self.find()
+        for i in self.__NE_log_dict:
+            print(i)
+            print(self.__NE_log_dict[i])
+
+
+def main():
+    A = np.array([[10, 3, 1, 4], [10, 2, 1, 5], [-1, -1, -1, -1], [10, 3, 1, 4]])
+    B = np.array([[-1, 1, 1, 4], [-1, 3, 3, 2], [-1, 10, 10, 10], [-1, 5, 4, 4]])
+    A = np.array([[6, 1, 2], [1, 6, 3]])
+    B = np.array([[1, 6, 5], [6, 1, 4]])
+    NE = NESolver3(A, B)
+    NE.analyze()
+
+
+if __name__ == '__main__':
+    main()
