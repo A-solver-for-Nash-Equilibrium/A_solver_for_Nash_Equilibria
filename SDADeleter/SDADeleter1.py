@@ -12,10 +12,9 @@ class SDADeleter1:
 
     def __init__(self, A, B):
         """
-
         :param
-            A: numpy array: payoff matric of player1
-            B: dnumpy array: payoff matric of player2
+            A: array or dataframe: payoff matrix of player1
+            B: array or dataframe: payoff matrix of player2
         """
         # Turn array into dataframe to track action indices
         self.__A = pd.DataFrame(A)
@@ -51,7 +50,7 @@ class SDADeleter1:
             # still check the old player until no SDA in this turn
             self.__recursively_delete_dominated_actions(player=player, outer_change=outer_change)
         else:
-            # continue to check the other player if its the first turn or a SDA was found in this turn
+            # continue to check the other player if its the first turn or a SDA was found before in this turn
             if first_turn or outer_change:
                 new_player = 2 / player
                 self.__recursively_delete_dominated_actions(player=new_player, begin_of_one_turn=True)
@@ -85,9 +84,20 @@ class SDADeleter1:
         return False
 
     def get_updated_payoff(self):
-        return self.__A.values, self.__B.values
+        """
+        return updated payoff matrices without SDA
+        use dataframe to keep action index
+        """
+        # return self.__A.values, self.__B.values # turn back to ndarray
+        return self.__A, self.__B
 
     def get_deleted_actions(self):
+        """
+        :return:
+            n_deleted_actions: int, total number of all the strictly dominated actions
+            deleted_m: list, list of indices of SDA of player1
+            deleted_n: list, list of indices of SDA of player2
+        """
         deleted_m = []
         deleted_n = []
         n_deleted_actions = -1
