@@ -21,25 +21,28 @@ from numpy import linalg
 pd.set_option("display.max_rows", None, "display.max_columns", None)
 pd.set_option('display.expand_frame_repr', False)
 pd.set_option('max_colwidth', None)
-
-eps = 0.00001  # epsilon for strict inequlity
-precision = '.6f'
-
-# log_column = ['x_count', 'x_value', 'y_count', 'y_value', 'NE_count', 'NE_value', 'w1', 'w2']
-log_column_dict = {'x_count': 0, 'x_value': None, 'y_count': 0, 'y_value': None, 'NE_count': 0, 'NE_value': None,
-                   'w1': None, 'w2': None}
-
+    
 
 def powerset(iterable):
     """
+    Find all the subsets
     https://stackoverflow.com/questions/1482308/how-to-get-all-subsets-of-a-set-powerset
-    Haven't understand underlined logic
-    returns a iterator?
     list(powerset("abcd")) --> [() (1,) (2,) (3,) (1,2) (1,3) (2,3) (1,2,3)]
     """
     s = list(iterable)
     # change the range statement to range(1, len(s)+1) to avoid a 0-length combination
     return chain.from_iterable(combinations(s, r) for r in range(len(s) + 1))
+
+
+"""
+settings for NESolver
+"""
+eps = 0.00001  # epsilon for strict inequality
+precision = '.6f'
+
+# log_column = ['x_count', 'x_value', 'y_count', 'y_value', 'NE_count', 'NE_value', 'w1', 'w2']
+log_column_dict = {'x_count': 0, 'x_value': None, 'y_count': 0, 'y_value': None, 'NE_count': 0, 'NE_value': None,
+                   'w1': None, 'w2': None}
 
 
 class NESolver2:
@@ -265,6 +268,7 @@ class NESolver2:
                                   'y_count': [self.__NE_log_dict[k]['y_count'] for k in self.__NE_log_dict],
                                   })
         return NE_log_df
+
 
     def test(self):
         self.find()

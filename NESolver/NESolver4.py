@@ -1,7 +1,5 @@
-# 2021/12/3
-# 2021/12/11
-# NESolver.analyze(): SDA - PNE - MNE
-# show support by action name
+# 2022/01/29
+# check input format
 
 import os
 import sys
@@ -135,15 +133,45 @@ class NESolver3:
 
     def __init__(self, A, B, action_name_1=None, action_name_2=None):  # A,B are numpy arrays, payoff matrix
         """
-        :param
-            A:
-            B:
-        :var
-            self.__NE_log_dict: dict, all supports, all info
-            self.__NE_dict：dict, only NE
+        :param A: 2-d numpy array, player1's payoff matrix
+        :param B: 2-d numpy array, player2's payoff matrix
+
+        :var self.__NE_log_dict: dict, all supports, all info
+        :var self.__NE_dict：dict, only NE
         """
+
+        # check input
+        if not (isinstance(A, np.ndarray) and isinstance(B, np.ndarray)):
+            raise TypeError("The input two payoff matrices should be numpy array.")
+            sys.exit(1)
+        if A.shape != B.shape:
+            raise ValueError("The input two payoff matrices should have same size.")
+            sys.exit(1)
+        if action_name_1:
+            if not isinstance(action_name_1, list):
+                raise TypeError("The input action names should be two list.")
+                sys.exit(1)
+            if len(action_name_1) != A.shape[0]:
+                raise ValueError("The length of input action names should match the number of actions.")
+                sys.exit(1)
+        if action_name_2:
+            if not isinstance(action_name_2, list):
+                raise TypeError("The input action names should be two list.")
+                sys.exit(1)
+            if len(action_name_2) != B.shape[1]:
+                raise ValueError("The length of input action names should match the number of actions.")
+                sys.exit(1)
+
+        # initialize
         self.__A = A
         self.__B = B
+
+        # default action name by index from 0
+        if not action_name_1:
+            action_name_1 = list(range(A.shape[0]))
+        if not action_name_2:
+            action_name_2 = list(range(B.shape[1]))
+        self.__action_names = [action_name_1, action_name_2]
 
         self.__lp_1_ini, self.__lp_2_ini = self.__init_lp_model()
 
@@ -154,12 +182,6 @@ class NESolver3:
         # will be updated in self.__analysis()
         self.__NE_info = {}
 
-        # map index in support to action names in (only) output values
-        if not action_name_1:
-            action_name_1 = range(A.shape[0])
-        if not action_name_2:
-            action_name_2 = range(B.shape[1])
-        self.__action_names = [action_name_1, action_name_2]
 
     def __init_lp_model(self):
         """
@@ -466,14 +488,20 @@ class NESolver3:
 
 
 def main():
-    # A = np.array([[2, 0], [0, 1]])
-    # B = np.array([[1, 0], [0, 2]])
-    # NE = NESolver3(A, B)
-    # NE.analyze()
-    support=[((0,2),()),((),()),((0,1,2),(2,))]
-    action_names = [['a1','b1','c1'], ['a2','b2','c2']]
-    sbn = map_support(support,action_names)
-    print(sbn)
+    A = np.array([[2, 0], [0, 1]])
+    # A = [[2, 0], [0, 1]]
+    # A = np.array([[0], [2]])
+    B = np.array([[1, 0], [0, 2]])
+    # B = [[2, 0], [0, 1]]
+    # B = np.array([[0], [2]])
+    a = ['a','s']
+    # a = (2,2)
+    # a = [1,2,3]
+    b = ['b1','b2']
+    # b = (1,2,3)
+    # b = [1,2,3]
+    NE = NESolver3(A, B,a,b)
+    NE.analyze()
 
 
 if __name__ == '__main__':

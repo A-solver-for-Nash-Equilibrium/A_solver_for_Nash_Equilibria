@@ -19,7 +19,7 @@ def test_game(game_name, A, B):
     print(B)
     NESolver = NESolver2(A=A, B=B)
     NE = NESolver.find()
-    print("This game has {_len} Nash Equilibrium: ".format(_len=NE['NE_count'].sum()))
+    print("This game has {len_} Nash Equilibrium: ".format(len_=NE['NE_count'].sum()))
     print(NE)
 
 

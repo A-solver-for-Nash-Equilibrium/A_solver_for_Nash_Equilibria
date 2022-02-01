@@ -161,13 +161,13 @@ def main():
     test_SDADeleter(A, B)
 
     print('\n *****************')
-    print([[(2), (2)], [(0), (1, 2)]]) # https://www.youtube.com/watch?v=ErJNYh8ejSA
+    print([[(2), (2)], [(0), (1, 3)]]) # https://www.youtube.com/watch?v=ErJNYh8ejSA
     A = np.array([[1, -1, 5, 1], [2, 1, 3, 5], [1, 0, 1, 0]])
     B = np.array([[1, 2, 0, 1], [3, 2, 0, 1], [1, 5, 7, 1]])
     test_SDADeleter(A, B)
 
     print('\n *****************')
-    print([[(0), (2)], [(2), (0)], [(0, 2), ()]])  # exchange player1 and 2
+    print([[(), (2)], [(2), (0)], [(1, 3), ()]])  # exchange player1 and 2
     B = np.array([[1, -1, 5, 1], [2, 1, 3, 5], [1, 0, 1, 0]]).T
     A = np.array([[1, 2, 0, 1], [3, 2, 0, 1], [1, 5, 7, 1]]).T
     test_SDADeleter(A, B)
