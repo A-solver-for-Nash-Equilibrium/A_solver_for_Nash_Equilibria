@@ -126,7 +126,7 @@ eps = 0.00001  # epsilon for strict inequality
 precision = '.6f'
 
 
-class NESolver3:
+class NESolver4:
     """
     NESolver to find all the Nash Equilibria of a bi-matrix game
     """
@@ -429,8 +429,8 @@ class NESolver3:
 
         # update self.__NE_info
         self.__NE_info['n_SDA'] = n_SDA
-        self.__NE_info['player1_SDA'] = deleted_indices_1
-        self.__NE_info['player2_SDA'] = deleted_indices_2
+        self.__NE_info['player1_SDA'] = [self.__action_names[0][i] for i in deleted_indices_1]
+        self.__NE_info['player2_SDA'] = [self.__action_names[1][i] for i in deleted_indices_1]
         self.__NE_info['n_PNE'] = n_PNE
         self.__NE_info['PNE'] = PNE
         self.__NE_info['n_MNE'] = n_MNE
