@@ -1,3 +1,9 @@
+# Introduction
+
+The project computes all pure or mixed Nash Equilibria of a bi-matrix game.
+
+Supported precision:  0.00001
+
 # File structure
 
 * NESolver
@@ -26,9 +32,9 @@ sys
 ***class NESolver(A, B, action_name_1=None, action_name_2=None)***
 
 
-* A :  2-d numpy array, payoff matirx of player 1
+* A :  2-d numpy array, payoff matrix of player 1
 
-  B :  2-d numpy array, payoff matirx of player 2
+  B :  2-d numpy array, payoff matrix of player 2
   
   ```python
   A = np.array([[8, 2, 2], [3, 9, 3], [-2, -2, 4]])
@@ -75,7 +81,7 @@ NESol = NESolver(A=A, B=B, action_name_1=n1, action_name_2=n2)
 NESol.analyze()
 ```
 
-This is method will print out the information of strictly dominated actions(SDA), pure Nash Equilibria(PNE) and mixed Nash Equilibria(MNE) of this game.
+This method will print out the information of strictly dominated actions(SDA), pure Nash Equilibria(PNE) and mixed Nash Equilibria(MNE) of this game.
 
 Example output:
 
@@ -96,12 +102,43 @@ MNE:
 0  ((J, F), (Y, Z))         1  [(0.000000, 0.833333, 0.166667), (0.000000, 0.083333, 0.916667)]
 ```
 
+* Strictly dominated actions
+
+  * `n_SDA` :  The total number of strictly dominated actions of the two players.
+  * `1_SDA` :  Strictly dominated actions of player 1. (action `I` in this example)
+  * `2_SDA` :  Strictly dominated actions of player 2. (action `X` in this example)
+
+* Pure Nash Equilibria
+
+  * `n_PNE` :  Number of pure Nash Equilibria of the given game. (2 PNE in this example)
+  * `PNE` :  All pure Nash Equilibria of the given game. ((J, Y) and (F, Z) are the only two PNE in this example)
+
+* Mixed Nash Equilibria
+
+  * `n_MNE` :  Number of mixed Nash Equilibria of the given game. (1 MNE in this example)
+
+  * `MNE` :   All mixed Nash Equilibria of the given game.
+
+    * Index column :  Start from 0.
+
+    * `support` :  Actions with positive possibility in this Nash Equilibrium. 
+
+    * `NE_count` :  The number of Nash Equilibria based on the support :  `1` or `inf`.
+
+    * `NE_value` :  If `NE_count==1`, it is the value of the MNE.
+
+      ​						If `NE_count==inf`, it shows an example of the MNE based on the support.
+
+      ​						 
+
 ### NESolver.find()
 
 ```
 info = NESol.find()
 print(info)
 ```
+
+
 
 Example output:
 
