@@ -123,31 +123,19 @@ MNE:
 ```
 
 * Strictly dominated actions
-
   * `n_SDA` :  The total number of strictly dominated actions of the two players.
   * `1_SDA` :  Strictly dominated actions of player 1. (action `I` in this example)
   * `2_SDA` :  Strictly dominated actions of player 2. (action `X` in this example)
-
 * Pure Nash Equilibria
-
   * `n_PNE` :  Number of pure Nash Equilibria of the given game. (2 PNE in this example)
   * `PNE` :  All pure Nash Equilibria of the given game. ((J, Y) and (F, Z) are the only two PNE in this example)
-
 * Mixed Nash Equilibria
-
   * `n_MNE` :  Number of mixed Nash Equilibria of the given game. (1 MNE in this example)
-
   * `MNE` :   All mixed Nash Equilibria of the given game.
-
     * Index column :  Start from 0.
-
     * `support` :  Actions with positive possibility. 
-
     * `NE_count` :  The number of Nash Equilibria based on the support :  `1` or `inf`.
-
-    * `NE_value` :  If `NE_count==1`, it is the value of the MNE. If `NE_count==inf`, it shows an example of the MNE based on the support.
-
-      ​						 
+    * `NE_value` :  If `NE_count==1`, it is the value of the MNE. If `NE_count==inf`, it shows an example of the MNE based on the support.						 
 
 ### NESolver.find()
 
