@@ -1,8 +1,14 @@
 # Introduction
 
-The project computes all pure or mixed Nash Equilibria of a bi-matrix game.
+The project computes all pure and mixed Nash Equilibria of a bi-matrix game.
 
-Supported precision:  0.00001
+Supported precision :  0.00001
+
+Main steps:
+
+* Delete strictly dominated actions.
+* Find all PNE based on column max and row max.
+* Do support numeration, and calculate mixed NE based on each support using gurobi.
 
 # File structure
 
@@ -26,6 +32,21 @@ sys
 ```
 
 # Example Usage
+
+```python
+from NESolver.NESolver4 import NESolver4 as NESolver
+import numpy as np
+
+A = np.array([[8, 2, 2], [3, 9, 3], [-2, -2, 4]])
+B = np.array([[1, 2, 4], [-2, 5, 4], [-2, 2, 7]])
+n1 = ['I', 'J', 'F']
+n2 = ['X','Y','Z']
+
+NESol = NESolver(A=A, B=B, action_name_1=n1, action_name_2=n2)
+NESol.analyze()
+info = NESol.find()
+print(info)
+```
 
 ## Input
 
@@ -71,7 +92,6 @@ sys
 ## Output
 
 ```python
-from NESolver.NESolver4 import NESolver4 as NESolver
 NESol = NESolver(A=A, B=B, action_name_1=n1, action_name_2=n2)
 ```
 
@@ -81,7 +101,7 @@ NESol = NESolver(A=A, B=B, action_name_1=n1, action_name_2=n2)
 NESol.analyze()
 ```
 
-This method will print out the information of strictly dominated actions(SDA), pure Nash Equilibria(PNE) and mixed Nash Equilibria(MNE) of this game.
+This method will print out the information of strictly dominated actions(SDA), pure Nash Equilibria(PNE) and mixed Nash Equilibria(MNE) of a given game.
 
 Example output:
 
@@ -121,13 +141,11 @@ MNE:
 
     * Index column :  Start from 0.
 
-    * `support` :  Actions with positive possibility in this Nash Equilibrium. 
+    * `support` :  Actions with positive possibility. 
 
     * `NE_count` :  The number of Nash Equilibria based on the support :  `1` or `inf`.
 
-    * `NE_value` :  If `NE_count==1`, it is the value of the MNE.
-
-      ​						If `NE_count==inf`, it shows an example of the MNE based on the support.
+    * `NE_value` :  If `NE_count==1`, it is the value of the MNE. If `NE_count==inf`, it shows an example of the MNE based on the support.
 
       ​						 
 
@@ -138,7 +156,7 @@ info = NESol.find()
 print(info)
 ```
 
-
+This methods returns a Pandas Dataframe that contains detailed information on calculating the Nash Equilibrium based on each support.
 
 Example output:
 
@@ -194,4 +212,42 @@ Example output:
 47     ((I, J, F), (Y, Z))      -1         0                                                              None      NaN  4.499985  (0.000010, 0.833328, 0.166662)      inf                            None      0.0
 48  ((I, J, F), (X, Y, Z))      -1         0                                                              None      NaN       NaN                            None      0.0                            None      0.0
 ```
+
+* Meaning of the columns
+
+  * Index column: Start from 0.
+
+  * `support` :  Actions with positive possibility (done by support numeration).
+
+  * `NE_type` :  The type of the Nash Equilibrium. 3 Possible values :
+
+    * `-1`:  The support does not admit a Nash Equilibrium.
+    * `PNE` :  The support admits an pure Nash Equilibrium.
+    * `MNE` :   The support admits mixed Nash Equilibria.
+
+  * `NE_count` :  The number of Nash Equilibria supported by the `support`. 3 Possible values :
+
+    * `0` :  The support does not admit a Nash Equilibrium.
+    * `1` :  The support admits one Nash Equilibrium.
+    * `inf` :  The support admits infinitely many Nash Equilibria.
+
+  * `NE_value` :  Value of the Nash Equilibria. 
+
+    * If `NE_count==0`, it shows `None`.
+    * If `NE_count==1`, it is the value of the MNE. 
+    * If `NE_count==inf`, it shows an example of the MNE based on the support.
+
+  * `w1` :  Expected payoff of **player 1**. `NaN` if **player 2** fails to have a strategy `y` to form a Nash Equilibrium.
+
+    `w2` :  Expected payoff of **player 2**. `NaN` if **player 1** fails to have a strategy `x` to form a Nash Equilibrium.
+
+  * `x_value` :  A stochastic vector representing (an example of) player1's strategy or `None` if player1 fails to have one.
+
+    `y_value` :  A stochastic vector representing (an example of) player2's strategy or `None`  if player2 fails to have one.
+
+  * `x_count`:  The number of player1's possible strategies :  `0.0`, `1.0` or `inf`
+
+    `y_count`:  The number of player2's possible strategies :  `0.0`, `1.0` or `inf`
+
+## Please see other examples in Test3.py
 

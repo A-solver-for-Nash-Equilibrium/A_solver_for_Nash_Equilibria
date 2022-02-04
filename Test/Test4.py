@@ -44,9 +44,14 @@ def test_game(game_name, A, B, n1=None, n2=None):
 
 A = np.array([[8, 2, 2], [3, 9, 3], [-2, -2, 4]])
 B = np.array([[1, 2, 4], [-2, 5, 4], [-2, 2, 7]])
-a = ['I', 'J', 'F']
-b = ['X','Y','Z']
-test_game("TTL2 b", A, B, a, b)
+n1 = ['I', 'J', 'F']
+n2 = ['X','Y','Z']
+# test_game("TTL2 b", A, B, n1, n2)
+NESol = NESolver(A=A, B=B, action_name_1=n1, action_name_2=n2)
+NESol.analyze()
+info = NESol.find()
+print(info)
+
 
 
 
