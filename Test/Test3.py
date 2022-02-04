@@ -6,7 +6,7 @@ import sys
 lib_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # the path that contain NESolver package
 sys.path.insert(0, lib_path)
 
-from NESolver.NESolver4 import NESolver4
+from NESolver.NESolver4 import NESolver4 as NESolver
 import numpy as np
 import pandas as pd
 
@@ -32,9 +32,9 @@ def test_game(game_name, A, B, n1=None, n2=None):
     print("player 2's payoff matrix:")
     print(B)
 
-    NESolver = NESolver4(A=A, B=B, action_name_1=n1, action_name_2=n2)
-    NESolver.analyze()
-    # NE = NESolver.find()
+    NESol = NESolver(A=A, B=B, action_name_1=n1, action_name_2=n2)
+    NESol.analyze()
+    # NE = NESol.find()
     # print()
     # print("This game has {len_} Nash Equilibrium: ".format(len_=NE['NE_count'].sum()))
     # print(NE)

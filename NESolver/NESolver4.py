@@ -7,10 +7,7 @@ import sys
 lib_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # the path that contain NESolver package
 sys.path.insert(0, lib_path)
 
-import sys
-from copy import deepcopy
 import gurobipy as gp
-from gurobipy import GRB
 import numpy as np
 from itertools import chain, combinations, product
 import pandas as pd
