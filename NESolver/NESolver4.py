@@ -497,7 +497,7 @@ def main():
     b = ['b1','b2']
     # b = (1,2,3)
     # b = [1,2,3]
-    NE = NESolver3(A, B,a,b)
+    NE = NESolver4(A, B,a,b)
     NE.analyze()
 
 

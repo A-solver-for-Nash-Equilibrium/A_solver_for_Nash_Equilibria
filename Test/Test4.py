@@ -38,7 +38,7 @@ def test_game(game_name, A, B, n1=None, n2=None):
     print(NE)
     info = NESol.find()
     print()
-    print("This game has {len_} Nash Equilibrium: ".format(len_=info['NE_count'].sum()))
+    # print("This game has {len_} Nash Equilibrium: ".format(len_=info['NE_count'].sum()))
     print(info)
 
 
