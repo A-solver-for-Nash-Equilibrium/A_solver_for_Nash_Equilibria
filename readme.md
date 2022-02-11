@@ -66,7 +66,7 @@ print(info)
 
   action_name_2 :  list (optional), action names of player2
 
-  (Actions will be indexed from 0 if action_name_1, action_name_2 are None.)
+  (Actions will be **indexed from 0** if action_name_1, action_name_2 are None.)
   
   ```python
   n1 = ['I', 'J', 'F']

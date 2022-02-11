@@ -21,9 +21,15 @@ pd.set_option('max_colwidth', None)
 
 def powerset(iterable):
     """
-    Find all the subsets of the input
-    https://stackoverflow.com/questions/1482308/how-to-get-all-subsets-of-a-set-powerset
-    list(powerset("abcd")) --> [() (1,) (2,) (3,) (1,2) (1,3) (2,3) (1,2,3)]
+    * To find all the subsets of the input value.
+    * Refernce: https://stackoverflow.com/questions/1482308/how-to-get-all-subsets-of-a-set-powerset
+    * Example usage: list(powerset("123")) --> [() (1,) (2,) (3,) (1,2) (1,3) (2,3) (1,2,3)]
+    * Time complexity : O(2^n), n is the length of the input
+    :param
+        iterable: ang iterable objective. In this case it's a list of numbers (action indices).
+    :return
+        A list of tuples. each tuple is a subset of the input iterable. The list contain all the subsets
+            with an empty set at its beginning.
     """
     s = list(iterable)
     # change the range statement to range(1, len(s)+1) to avoid a 0-length combination
@@ -32,11 +38,16 @@ def powerset(iterable):
 
 def support_numeration(m, n):
     """
-    calculate all the supports for bi-matirx game using action index starting form 0
+    * To calculate all the possible supports for a bi-matirx game.
+    * The input is two lists of action index by default.
+      The method will find all the combination between the subsets of the two list.
+    * Time complexity (n is the number of actions of one player): O(4^n)
+        - Use powerset() to calculate subsets: O(2^n)
+        - Find the combination of the two subsets: O(2^n * 2^n) = O(2^(2n))
     :param
         m: list, list of player1's action indices
         n: list, list of player2's action indices
-    :return:
+    :return
         support_m: list, player1's support
         support_n: list, player2's support
         support_all: list, all the supports of the two players, i.e. Cartesian product of support_m & support_n
@@ -57,12 +68,24 @@ def support_numeration(m, n):
 
 def find_PNE(A, B):
     """
-    Find PNE of bi-matrix game
+    * Find all PNE of bi-matrix game.
+    * If a pure strategy with the payoff of player 1 being u1 and the payoff of player2 being u2 is a a Nash Equilibrum,
+      then u1 should be the max value of the column that contains u1,
+           u2 should be the max value of the row that contains u2.
+    * Time complexity (assume each user has n actions): O(n^2)
+        - Find the max value of one column or row: O(n)
+        - Find all the position(s) that is a column max or row max: O(n^2)
+        - Find all the position(s) that is both a column max of player1's payoff matrix and a row max of player2's
+          payoff matrix, i.e. the intersection of column max and row max position: O(n)
     :param
-        A: array or dataframe, payoff matrix of player1
-        B: array or dataframe, payoff matrix of player2
+        A: Pandas Dataframe or Numpy array, payoff matrix of player1.
+        B: Pandas Dataframe or Numpy array, payoff matrix of player2.
     :return:
-        PNE: list, a list of PNE by action index (dataframe: original index; array: index from 0 for each player)
+        PNE: List of tuples, each tuple is a PNE.
+             (dataframe: original index; array: index from 0 for each player)
+             e.g. [((1,),(2,)), ((2,),(1,))] means the game has 2 PNE.
+                  One is that player1 chooses the action indexed as 1, player2 chooses the action indexed by 2.
+                  One is that player1 chooses the action indexed as 2, player2 chooses the action indexed by 1.
     """
     A = pd.DataFrame(A)
     B = pd.DataFrame(B)
@@ -98,10 +121,15 @@ def find_PNE(A, B):
 
 def map_support(support, action_names):
     """
-    map a list of supports with defualt index into the format of action name
-    :param support: [((),()),...]
-    :param action_names: [[],[]]
-    :return: support_by_name: [((),()),...]
+    * Map a list of supports with default index into the format of action name.
+    * Worst case time complexity (assume each user has n actions, all supports admits NE):o(n * 2^n)
+        - If we need to map all the possible supports from support numeration: each index will appear 2^(n-1) times,
+          and we need to map all the 2 * n actions of 2 players: o(n * 2^n)
+    :param
+        support: A list of tuples, [((),()),...]
+        action_names: A list of two lists of string, storing action names of two players, [[],[]]
+    :return
+        support_by_name: A list of tuples, [((),()),...], indices in support are translated to action names
     """
     support_by_name = []
     for s in support:

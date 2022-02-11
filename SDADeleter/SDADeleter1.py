@@ -13,8 +13,9 @@ class SDADeleter1:
     def __init__(self, A, B):
         """
         :param
-            A: array or dataframe: payoff matrix of player1
-            B: array or dataframe: payoff matrix of player2
+            A: Numpy array or pandas dataframe: payoff matrix of player1
+            B: Numpy array or pandas dataframe: payoff matrix of player2
+            (In this case only array is used)
         """
         # Turn array into dataframe to track action indices
         self.__A = pd.DataFrame(A)
@@ -29,12 +30,15 @@ class SDADeleter1:
                                                outer_change=False):
         """
         Try to find and delete all strictly dominated actions of both players
-        * will check dominated actions for row and column players repeatedly
+        * will check dominated actions for row(with payoff matrix A) and column(with payoff matrix B) players repeatedly
                 (checkA, checkB, checkA… each is called one turn, __find_one_strictly_dominated_action() may be called
                  more than once in one turn)
         * each player will be checked for at least once (param: first_turn)
-        * the function returns when either player don’t have a dominated action in his/her turn
-        * will change to check another player if no more dominated actions will be found in his/her turn
+          * the function returns when either player don’t have a dominated action in her turn
+            * will change to check another player if no more dominated actions will be found in her turn
+        * Worst case time complexity (n actions each player, one action is deleted in each turn, each player remains
+          only one action at last):
+          - SUM from 2 to n {n* n* (n-1)}: O(n^4)
         :param
             player: int, 1 or 2
             first_turn: boolean, whether it's the first turn
@@ -60,11 +64,18 @@ class SDADeleter1:
 
     def __find_one_strictly_dominated_action(self, player):
         """
-        Try to find and delete a strictly dominated action of the selected player
-        Use dataframe here to track the index of actions
-        This function will be called in the function 'iteratively_delete_dominated_actions()'
-        :param player: int, 1 or 2
-        :return: boolean, True if a SDA is found
+        * Try to find and delete a strictly dominated action of the selected player.
+          Return immediately when one SDA is captured.
+        * Dataframe is used here to track the index of actions
+        * This function will be called in the function 'iteratively_delete_dominated_actions()'
+        * Worst case run time complexity(assume each player have n actions, an SDA is found at last comparison step):
+          O(n^3)
+            - Compare between two rows: O(n)
+            - Number of arrangement of two rows: n * (n-1)
+        :param
+            player: int, 1 or 2
+        :return
+            boolean, True if a SDA is found
         """
         if player == 1:
             target = self.__A
@@ -85,8 +96,8 @@ class SDADeleter1:
 
     def get_updated_payoff(self):
         """
-        return updated payoff matrices without SDA
-        use dataframe to keep action index
+        :return
+            two dataframe: payoff matrix without SDA, the index indicates which action is deleted
         """
         # return self.__A.values, self.__B.values # turn back to ndarray
         return self.__A, self.__B
