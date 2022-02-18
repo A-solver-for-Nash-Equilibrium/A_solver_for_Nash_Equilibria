@@ -1,5 +1,5 @@
-# 2022/01/29
-# check input format
+# 2022/02/13
+# move updating support to find()
 
 import os
 import sys
@@ -151,13 +151,14 @@ eps = 0.00001  # epsilon for strict inequality
 precision = '.6f'
 
 
-class NESolver4:
+class NESolver:
     """
     NESolver to find all the Nash Equilibria of a bi-matrix game
     """
 
     def __init__(self, A, B, action_name_1=None, action_name_2=None):  # A,B are numpy arrays, payoff matrix
         """
+        check input values and initialized
         :param
             A: 2-d numpy array, player1's payoff matrix
             B: 2-d numpy array, player2's payoff matrix
@@ -200,9 +201,8 @@ class NESolver4:
 
         self.__lp_1_ini, self.__lp_2_ini = self.__init_lp_model()
 
-        self.__support = support_numeration(range(A.shape[0]), range(B.shape[1]))[2]
-
         # will be updated in self.__find()
+        self.__support = ()
         self.__NE_log_dict = {}
         # will be updated in self.__analysis()
         self.__NE_info = {}
@@ -433,6 +433,8 @@ class NESolver4:
         You can see clearly here which player fails to admit a NE via the value of w1 and w2
         Assign value to self.__NE_log_dict.
         """
+        # support numeration
+        self.__support = support_numeration(range(self.__A.shape[0]), range(self.__B.shape[1]))[2]
         # record the results of all support into self.__NE_log_dict
         for support in self.__support:
             self.__NE_log_dict[support] = self.__compute_equilibrium_of_one_support(support)

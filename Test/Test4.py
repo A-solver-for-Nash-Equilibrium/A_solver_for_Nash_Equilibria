@@ -6,7 +6,7 @@ import sys
 lib_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # the path that contain NESolver package
 sys.path.insert(0, lib_path)
 
-from NESolver.NESolver4 import NESolver4 as NESolver
+from NESolver.NESolver5 import NESolver
 import numpy as np
 import pandas as pd
 
