@@ -369,10 +369,12 @@ Implemented by `__init_lp_model()`, `__compute_equilibrium_of_one_support()` and
 **Main idea:**
 
 * We use two LP models to find the NE for each support. One is `lpm_1`, which handles x and w2. One is `lpm_2`, which handles y and w1.
-* `__init_lp_model()` builds the two LP with basic variables and constraint that  will be used for each support. Thus it will be called only once. `__compute_equilibrium_of_one_support()` updates the constraints for each support and solve the two LP.
+* `__init_lp_model()` builds the two LP with basic variables and constraint that  will be used for each support. Thus it will be called only once. `__compute_equilibrium_of_one_support()` updates the constraints for each support and solve the two LP. A NE exists only when  the two LP both have a feasible  solution.
 * If an LP model has a feasible solution. We use `__check_NE_infinity()` to find out whether it has infinitely many solutions.
 
 **Steps:** 
+
+Suppose `I` is the set of action index in player1's support, `J` is the set of action index in player2's support
 
 * Initialize
 
@@ -384,7 +386,7 @@ Implemented by `__init_lp_model()`, `__compute_equilibrium_of_one_support()` and
     | w2                   | add 1 variable   |
     | B*                   | add 1 variable   |
     | x_1,…,x_n >= 0       | add n constraint |
-    | x1+x2+..xn=1         | add 1 constraint |
+    | x_1+x_2+..x_n=1      | add 1 constraint |
     | B* = B.T  * y        | add n constraint |
 
   * lpm_2
@@ -395,17 +397,26 @@ Implemented by `__init_lp_model()`, `__compute_equilibrium_of_one_support()` and
     | w1                   | add 1 variable   |
     | A*                   | add 1 variable   |
     | y1,…,ym >= 0         | add m constraint |
-    | y1+y2+..yn=1         | add 1 constraint |
+    | y_1+y_2+..y_n=1      | add 1 constraint |
     | A* = A * y           | add m constraint |
 
 * Update constraints for each support
+
+  * lpm_1
+
+    |                                                              |                   |
+    | ------------------------------------------------------------ | ----------------- |
+    | x_i  = 0  if i not in `I`;  x_i  > 0  if action i in I       | add n constraints |
+    | B*_i <= w2  if j not in support; B*_i = w2 if action i in support | add n constraints |
 
   * lpm_2
 
     |                                                              |                   |
     | ------------------------------------------------------------ | ----------------- |
-    | y_j  = 0  if action j not in support;  y_j  > 0  if action j in support | add n constraints |
-    | A*_j <= w1  if action j not in support; A*_j = w1 if action j in support | add n contraints  |
+    | y_j  = 0  if action j not in support;  y_j  > 0  if action j in support | add m constraints |
+    | A*_j <= w1  if action j not in support; A*_j = w1 if action j in support | add m constraints |
+
+* Solve lpm_1
 
 * Extract
 
