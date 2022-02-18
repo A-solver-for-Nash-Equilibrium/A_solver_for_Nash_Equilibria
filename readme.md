@@ -10,14 +10,18 @@ Main steps:
 * Find all PNE based on column max and row max.
 * Do support numeration, and calculate mixed NE based on each support using gurobi.
 
+
+
 # File structure
 
 * NESolver
-  * NESolver4.py
+  * NESolver5.py
 * SDADeleter
   * SDADeleter1.py
 * Test
   * Test3.py
+
+
 
 # Software Dependencies
 
@@ -34,7 +38,7 @@ sys
 # Example Usage
 
 ```python
-from NESolver.NESolver4 import NESolver4 as NESolver
+from NESolver.NESolver5 import NESolver
 import numpy as np
 
 A = np.array([[8, 2, 2], [3, 9, 3], [-2, -2, 4]])
@@ -97,7 +101,7 @@ NESol = NESolver(A=A, B=B, action_name_1=n1, action_name_2=n2)
 
 ### NESolver.analyze()
 
-```
+```python
 NESol.analyze()
 ```
 
@@ -139,7 +143,7 @@ MNE:
 
 ### NESolver.find()
 
-```
+```python
 info = NESol.find()
 print(info)
 ```
@@ -237,5 +241,181 @@ Example output:
 
     `y_count`:  The number of player2's possible strategies :  `0.0`, `1.0` or `inf`
 
+
+
 ## Please see other examples in Test3.py
+
+
+
+# Code Structure
+
+![image-20220216124354467](readme.assets/image-20220216124354467.png)
+
+* Explanations of each method is within the code comment.
+
+# Time Complexity
+
+**Assumption:** 
+
+* Player**1** is the **row** player having payoff matrix **A** and **n** actions.
+
+  Her strategy is represented as a stochastic vector **x** and her expected payoff is **w1**.  
+
+* Player**2** is the **column** player having payoff matrix **B** and **m** actions.
+
+  Her strategy is represented as a stochastic vector **y** and her expected payoff is **w2**.
+
+## Delete Strictly Dominated Actions (SDA)
+
+Implemented by `__find_one_strictly_dominated_action()` and `__recursively_delete_dominated_actions()`.
+
+**Main Idea:**
+
+* An action is detected as a SDA if in the payoff matrix its column (or row) is strictly smaller than another column (or row) element-wisely.
+
+* `__recursively_delete_dominated_actions()` will check dominated actions for row (with payoff matrix A) and column (with payoff matrix B) players repeatedly.
+
+      (checkA, checkB, checkA… each is called one turn)
+
+* `__find_one_strictly_dominated_action()` will be called to check whether one strictly dominated action exists in one turn. 
+
+     It may be called more than once in one turn if there're multiple SDA in one turn. 
+
+**Principles (priority from high to low):**
+
+* Each player will be checked for at least once
+* Stop checking when either player don’t have a dominated action in her turn
+* Will change to check another player if no more dominated actions can be found in her turn
+
+### **Worst case time complexity**
+
+Assume player1 has n actions and player2 has m actions. The payoff matrices A and B are of shape n * m. In the worst case, the first turn do not find any strictly dominated actions. Then starting from the second turn, one strictly dominated action is found and deleted at the last comparison in each turn until each player has only one action left. 
+
+| Turn Index | Payoff matrix | Whether SDA exists | Original shape | Outcome shape |
+| ---------- | ------------- | ------------------ | -------------- | ------------- |
+| 1          | A             | F                  | n * m          | n * m         |
+| 2          | B             | T                  | n * m          | n * (m-1)     |
+| 3          | A             | T                  | n * (m-1)      | (n-1) * (m-1) |
+| ...        | ...           |                    |                |               |
+| n+m        | A or B        | T                  | 1 * 2 or 2 * 1 | 1 * 1         |
+
+* To find one SDA in one turn, given payoff matrices of shape i * j
+
+  * Player1 with payoff matrix A: O(j * i * (i-1))
+    * Compare the elements between two row: O(j)
+    * The number of comparisons: i * (i-1)   (row order matters)
+  * Player2 with payoff matrix B: O(i * j * (j-1)) , with similar reasons
+
+* From the aspect of player1, the shape of payoff matrix we need to check:
+
+  * n * m
+  * n * (m-1)
+  * (n-1) * (m-2)
+  * (n-2) * (m-3) 
+  * ...
+
+  From the aspect of player2, the shape of payoff matrix we need to check:
+
+  * n * m
+  * (n-1) * (m-1)
+  * (n-2) * (m-2)
+  * ...
+
+* **Assume n = m, the overall time complexity is:**
+
+  $\sum_{k=1}^{n-1} [k(k+1)k+kk(k-1)]+2nn(n-1)$
+
+  $=\sum_{k=1}^{n-1}2k^3 + 2n^2(n-1)$ , (according to $Sn=1^3+2^3+...+n^3=[n(n+1)/2]^2$)
+
+  $= O(n^4)$
+
+* **Since we only consider small games here, let n = 3, the complexity is 54.**
+
+## Find pure Nash Equilibria (PNE)
+
+Implemented by `find_PNE`.
+
+**Main idea:**
+
+* Assume row player1 has payoff matrix A, column player2 has payoff matrix B
+
+* If a strategy profile is detected as PNE if and only if 
+  * it's payoff of player1 is the max value in the corresponding column of  A and 
+  * the payoff of player2 is the max value in the corresponding row of B.
+* Store the location of column max values and row max values into two sets, and find the intersection of the two sets which shows the location of PNE.
+
+### Worst case time complexity
+
+Assume player1 has n actions, player 2 has m actions.
+
+* Find all column max for player1: O(mn)
+
+  * Find the max value of one column: O(n)
+  * Number of columns: m
+
+  Find all row max for player2: O(mn)
+
+  * Find the max value of one row: O(m)
+  * Number of rows: n
+
+* Assume there are i column max values and j row max values, we use python set `intersection()` to find PNE. The time complexity of this step is O(min(i,j)). (by hash table, Ref: [link](https://stackoverflow.com/questions/8102478/intersection-complexity/8102505))
+
+* Since the upper bound of i or j is mn, the overall time complexity is $O(mn)$ when all strategies have the same payoff for one player.
+
+## Compute Nash Equilibria (NE) based on one support
+
+Implemented by `__init_lp_model()`, `__compute_equilibrium_of_one_support()` and `__check_NE_infinity()`.
+
+**Main idea:**
+
+* We use two LP models to find the NE for each support. One is `lpm_1`, which handles x and w2. One is `lpm_2`, which handles y and w1.
+* `__init_lp_model()` builds the two LP with basic variables and constraint that  will be used for each support. Thus it will be called only once. `__compute_equilibrium_of_one_support()` updates the constraints for each support and solve the two LP.
+* If an LP model has a feasible solution. We use `__check_NE_infinity()` to find out whether it has infinitely many solutions.
+
+**Steps:** 
+
+* Initialize
+
+  * lpm_1
+
+    |                      |                  |
+    | -------------------- | ---------------- |
+    | x = [x_1, .., x_n].T | add n variables  |
+    | w2                   | add 1 variable   |
+    | B*                   | add 1 variable   |
+    | x_1,…,x_n >= 0       | add n constraint |
+    | x1+x2+..xn=1         | add 1 constraint |
+    | B* = B.T  * y        | add n constraint |
+
+  * lpm_2
+
+    |                      |                  |
+    | -------------------- | ---------------- |
+    | y = [y_1, .., y_m].T | add m variables  |
+    | w1                   | add 1 variable   |
+    | A*                   | add 1 variable   |
+    | y1,…,ym >= 0         | add m constraint |
+    | y1+y2+..yn=1         | add 1 constraint |
+    | A* = A * y           | add m constraint |
+
+* Update constraints for each support
+
+  * lpm_2
+
+    |                                                              |                   |
+    | ------------------------------------------------------------ | ----------------- |
+    | y_j  = 0  if action j not in support;  y_j  > 0  if action j in support | add n constraints |
+    | A*_j <= w1  if action j not in support; A*_j = w1 if action j in support | add n contraints  |
+
+* Extract
+
+  | w1       | extract 1 value |
+  | -------- | --------------- |
+  | y1,..,y2 | extract n value |
+
+  
+
+
+
+
 
