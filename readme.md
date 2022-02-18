@@ -1,4 +1,4 @@
-# Introduction
+# 1. Introduction
 
 The project computes all pure and mixed Nash Equilibria of a bi-matrix game.
 
@@ -12,7 +12,7 @@ Main steps:
 
 
 
-# File structure
+# 2. File structure
 
 * NESolver
   * NESolver5.py
@@ -23,7 +23,7 @@ Main steps:
 
 
 
-# Software Dependencies
+# 3. Software Dependencies
 
 ```
 python 			3.8.12
@@ -35,7 +35,7 @@ os
 sys
 ```
 
-# Example Usage
+# 4. Example Usage
 
 ```python
 from NESolver.NESolver5 import NESolver
@@ -52,7 +52,7 @@ info = NESol.find()
 print(info)
 ```
 
-## Input
+## 4.1 Input
 
 ***class NESolver(A, B, action_name_1=None, action_name_2=None)***
 
@@ -93,13 +93,13 @@ print(info)
   ValueError: The length of input action names should match the number of actions.
   ```
 
-## Output
+## 4.2 Output
 
 ```python
 NESol = NESolver(A=A, B=B, action_name_1=n1, action_name_2=n2)
 ```
 
-### NESolver.analyze()
+### 4.2.1 NESolver.analyze()
 
 ```python
 NESol.analyze()
@@ -141,7 +141,7 @@ MNE:
     * `NE_count` :  The number of Nash Equilibria based on the support :  `1` or `inf`.
     * `NE_value` :  If `NE_count==1`, it is the value of the MNE. If `NE_count==inf`, it shows an example of the MNE based on the support.						 
 
-### NESolver.find()
+### 4.2.2 NESolver.find()
 
 ```python
 info = NESol.find()
@@ -243,17 +243,17 @@ Example output:
 
 
 
-## Please see other examples in Test3.py
+## 4.3 Please see other examples in Test3.py
 
 
 
-# Code Structure
+# 5. Code Structure
 
 ![image-20220216124354467](readme.assets/image-20220216124354467.png)
 
 * Explanations of each method is within the code comment.
 
-# Time Complexity
+# 6. Time Complexity
 
 **Assumption:** 
 
@@ -265,7 +265,7 @@ Example output:
 
   Her strategy is represented as a stochastic vector **y** and her expected payoff is **w2**.
 
-## Delete Strictly Dominated Actions (SDA)
+## 6.1 Delete Strictly Dominated Actions (SDA)
 
 Implemented by `__find_one_strictly_dominated_action()` and `__recursively_delete_dominated_actions()`.
 
@@ -287,9 +287,9 @@ Implemented by `__find_one_strictly_dominated_action()` and `__recursively_delet
 * Stop checking when either player don’t have a dominated action in her turn
 * Will change to check another player if no more dominated actions can be found in her turn
 
-### **Worst case time complexity**
+### 6.1.1 **Worst case time complexity**
 
-Assume player1 has n actions and player2 has m actions. The payoff matrices A and B are of shape n * m. In the worst case, the first turn do not find any strictly dominated actions. Then starting from the second turn, one strictly dominated action is found and deleted at the last comparison in each turn until each player has only one action left. 
+Assume player1 has n actions and player2 has m actions. The payoff matrices A and B are of shape n * m. In the worst case, the first turn do not find any strictly dominated actions. Then starting from the second turn, one strictly dominated action is found and deleted at the last comparison in each turn until each player has only one action left.  (When check A, we may delete one row. When check B, we may delete one column.)
 
 | Turn Index | Payoff matrix | Whether SDA exists | Original shape | Outcome shape |
 | ---------- | ------------- | ------------------ | -------------- | ------------- |
@@ -331,7 +331,7 @@ Assume player1 has n actions and player2 has m actions. The payoff matrices A an
 
 * **Since we only consider small games here, let n = 3, the complexity is 54.**
 
-## Find pure Nash Equilibria (PNE)
+## 6.2 Find pure Nash Equilibria (PNE)
 
 Implemented by `find_PNE`.
 
@@ -344,7 +344,7 @@ Implemented by `find_PNE`.
   * the payoff of player2 is the max value in the corresponding row of B.
 * Store the location of column max values and row max values into two sets, and find the intersection of the two sets which shows the location of PNE.
 
-### Worst case time complexity
+### 6.2.1 Worst case time complexity
 
 Assume player1 has n actions, player 2 has m actions.
 
@@ -362,71 +362,183 @@ Assume player1 has n actions, player 2 has m actions.
 
 * Since the upper bound of i or j is mn, the overall time complexity is $O(mn)$ when all strategies have the same payoff for one player.
 
-## Compute Nash Equilibria (NE) based on one support
+## 6.3 Compute Nash Equilibria (NE) based on one support
 
 Implemented by `__init_lp_model()`, `__compute_equilibrium_of_one_support()` and `__check_NE_infinity()`.
 
-**Main idea:**
+### 6.3.1 **Main idea**
 
 * We use two LP models to find the NE for each support. One is `lpm_1`, which handles x and w2. One is `lpm_2`, which handles y and w1.
 * `__init_lp_model()` builds the two LP with basic variables and constraint that  will be used for each support. Thus it will be called only once. `__compute_equilibrium_of_one_support()` updates the constraints for each support and solve the two LP. A NE exists only when  the two LP both have a feasible  solution.
-* If an LP model has a feasible solution. We use `__check_NE_infinity()` to find out whether it has infinitely many solutions.
+* If an LP model has a feasible solution. We use`__check_NE_infinity()` to find out whether it has infinitely many solutions.
 
-**Steps:** 
+### **6.3.2 Steps**
 
-Suppose `I` is the set of action index in player1's support, `J` is the set of action index in player2's support
+(Steps for player1 and player2 is symmetric except A * y and B.T * x. The explanation below is flattened for easy understanding.)
 
-* Initialize
+Suppose `I` is the set of action index in player1's support, `J` is the set of action index in player2's support.
 
-  * lpm_1
-
-    |                      |                  |
-    | -------------------- | ---------------- |
-    | x = [x_1, .., x_n].T | add n variables  |
-    | w2                   | add 1 variable   |
-    | B*                   | add 1 variable   |
-    | x_1,…,x_n >= 0       | add n constraint |
-    | x_1+x_2+..x_n=1      | add 1 constraint |
-    | B* = B.T  * y        | add n constraint |
-
-  * lpm_2
-
-    |                      |                  |
-    | -------------------- | ---------------- |
-    | y = [y_1, .., y_m].T | add m variables  |
-    | w1                   | add 1 variable   |
-    | A*                   | add 1 variable   |
-    | y1,…,ym >= 0         | add m constraint |
-    | y_1+y_2+..y_n=1      | add 1 constraint |
-    | A* = A * y           | add m constraint |
-
-* Update constraints for each support
+* **Initialize**
 
   * lpm_1
 
-    |                                                              |                   |
-    | ------------------------------------------------------------ | ----------------- |
-    | x_i  = 0  if i not in `I`;  x_i  > 0  if action i in I       | add n constraints |
-    | B*_i <= w2  if j not in support; B*_i = w2 if action i in support | add n constraints |
+    |                      |                  |       |
+    | -------------------- | ---------------- | ----- |
+    | x = [x_1, .., x_n].T | add n variables  | [1-1] |
+    | w2                   | add 1 variable   | [1-2] |
+    | B*                   | add 1 variable   | [1-3] |
+    | x_1,…,x_n >= 0       | add n constraint | [1-4] |
+    | x_1+x_2+..x_n=1      | add 1 constraint | [1-5] |
+    | B* = B.T  * y        | add n constraint | [1-6] |
 
   * lpm_2
 
-    |                                                              |                   |
-    | ------------------------------------------------------------ | ----------------- |
-    | y_j  = 0  if action j not in support;  y_j  > 0  if action j in support | add m constraints |
-    | A*_j <= w1  if action j not in support; A*_j = w1 if action j in support | add m constraints |
+    |                      |                  |       |
+    | -------------------- | ---------------- | ----- |
+    | y = [y_1, .., y_m].T | add m variables  | [2-1] |
+    | w1                   | add 1 variable   | [2-2] |
+    | A*                   | add 1 variable   | [2-3] |
+    | y_1,…,y_m >= 0       | add m constraint | [2-4] |
+    | y_1+y_2+..y_m=1      | add 1 constraint | [2-5] |
+    | A* = A * y           | add m constraint | [2-6] |
 
-* Solve lpm_1
+* **Update constraints** for each support
 
-* Extract
+  * lpm_1
 
-  | w1       | extract 1 value |
-  | -------- | --------------- |
-  | y1,..,y2 | extract n value |
+    |                                                           |                   |       |
+    | --------------------------------------------------------- | ----------------- | ----- |
+    | x_i  = 0  if i not in `I`;  x_i  > 0  if action i in `I`  | add n constraints | [1-7] |
+    | B*_i <= w2  if i not in `I`; B*_i = w2 if action i in `I` | add n constraints | [1-8] |
+
+  * lpm_2
+
+    |                                                              |                   |       |
+    | ------------------------------------------------------------ | ----------------- | ----- |
+    | y_j  = 0  if action j not in `J`;  y_j  > 0  if action j in `J` | add m constraints | [2-7] |
+    | A*_j <= w1  if action j not in `J`; A*_j = w1 if action j in `J` | add m constraints | [2-8] |
+
+* **Solve** LP models
+
+  * lpm_1 
+
+    * #variables: n+1 
+
+      [1-1], [1-2]
+
+    * #equality or inequality constraints: 2n+1 
+
+      [1-5], [1-7], [1-8]
+
+    * (no B* and B* = B.T * x since they functions as a bridge between w2 and x).
+
+  * lpm_2
+
+    * #variables: m+1
+
+      [2-1], [2-2]
+
+    * #equality or inequality constraints: 2m+1  
+
+      [2-5], [2-7], [2-8]
+
+    * (no A* and A* = A * y since they functions as a bridge between w1 and y).
+
+* **If** an LP has a feasible solution, we then **extract** the value of corresponding payoff and strategy vector, and **check** whether the LP have infinitely many solutions:
+
+  * lpm_1:
+
+    * trim payoff matrices B so that it only contains rows and columns representing actions that are in the support `I`, `J`
+
+    * The value of x is determined by equations in [1-5], [1-8]
+
+    * Reformate these equations in to matrix computation M*z=b with z = [x_i1, x_i2, ..., w2].T with i1, i2... in `I`.
+
+      Now M is of shape `(|J|+1, |I|+1)`, b is of shape `(|I|+1, 1)`.
+
+    * If `rank(M) == rank(M|b) < |I|+1`, player1 has infinitely many strategies that may form NE under this support.
+
+  * lpm_2:
+
+    * trim payoff matrices A so that it only contains rows and columns representing actions that are in the support `I`, `J`
+
+    * The value of x is determined by equations in [2-5], [2-8]
+
+    * Reformate these equations in to matrix computation M*z=b with z = [y_j1, y_j2, ..., w1].T with j1, j2... in `J`.
+
+      Now M is of shape `(|I|+1, |J|+1)`, b is of shape `(|J|+1, 1)`.
+
+    * If `rank(M) == rank(M|b) < |J|+1`, player2 has infinitely many strategies that may form NE under this support.
+
+* Determine whether the support admits NE, update relevant information.
+
+### 6.3.3 Time Complexity
+
+Assume that adding one variable or constraint, extracting one variable takes a constant time.
+
+Assume the time complexity of gurobi solving the two LP models with player1 has n actions and player2 has m actions is T_gurobi(n, m). 
+
+Assume the time complexity of computing the rank of matrix with shape (a, b) or (b, a) is T_rank(a,b).
+
+* Initialize: $O(mn)$ (for matrix computation in [1-6], [2-6])
+* Update constraints for each support:  $O(n+m)$
+* Solve LP models: $T\_gurobi(n, m)$
+
+If an LP has a feasible solution:
+
+* Extract outcome: $O(n)$ or $O(m)$, depends on which LP model to extract
+* Check whether there are infinitely many NE: 
+  * Trim payoff matrix: $O(|I||J|)$
+  * Check `lpm_1`: $O(|I||J|)+T\_rank(|J|+1,|I|+2)$
+  * Check `lpm_2`: $O(|I||J|)+T\_rank(|I|+1,|J|+2)$
+
+In summary, the time complexity of computing NE based on one support is highly depends on whether the LP models have solution and the size of support.
+
+* Lower bound without initialization:
+
+  The two LP models do not have feasible solution: $O(n+m)+T\_gurobi(n,m)$
+
+* Upper bound without initialization:
+
+  The support admit NE: $O(n+m)+T\_gurobi(n,m)+O(|I||J|)+T\_rank(|I|,|J|)$
+
+## 6.4 Support numeration
+
+Implemented by `support_numeration()` and `powerset()`.
+
+**Main idea:**
+
+* Given the list of index of the actions, we use `powerset()` to find all the subset of action indices of each player.
+* Then `support_numeration()` is used to find all the combinations between the index subsets of the two players.
+
+### **6.4.1 Time complexity**
+
+* Find all index subsets for players: $O(2^n)+O(2^m)$
+* Find all combination between two players' index subsets: $O((2^n-1)*(2^m-1))=O(2^{m+n})$
+* Overall time complexity: $O(2^{m+n})$
+
+## Find()
+
+* If  method `find()` is used to compute all the Nash Equilibria of a game
+  * it will first do support numeration,
+  * and then solve NE based on each support.
+
+* Therefore the overall time complexity should be the sum of the time complexity of finding NE based on each support.
+  * As in 6.4.1, we have overall $(2^n-1)*(2^m-1)$ supports. 
+  * As in 6.3.3, the time complexity of computing NE of one support is highly depend on whether the two LP are feasible and the size of each support.
+
+## Analyze()
+
+* If  method `Analyze()` is used to compute all the Nash Equilibria of a game, 
+
+  * it will first delete all the strictly dominated actions (6.1), 
+  * then find pure Nash Equilibria without SDA (6.2), 
+  * conduct support numeration without SDA (6.4), 
+    * will delete supports of pure strategy profile
+    * will delete supports that containing one pure strategy if no PNE is found
+  * and solve NE based on each support (6.3)
+
+* The time complexity highly varies between different games.
 
   
-
-
-
-
 
