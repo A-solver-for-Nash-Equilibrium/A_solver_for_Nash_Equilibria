@@ -517,7 +517,9 @@ Implemented by `support_numeration()` and `powerset()`.
 * Find all combination between two players' index subsets: $O((2^n-1)*(2^m-1))=O(2^{m+n})$
 * Overall time complexity: $O(2^{m+n})$
 
-## Find()
+## 6.5 Conclusion
+
+### 6.5.1 Find()
 
 * If  method `find()` is used to compute all the Nash Equilibria of a game
   * it will first do support numeration,
@@ -527,7 +529,7 @@ Implemented by `support_numeration()` and `powerset()`.
   * As in 6.4.1, we have overall $(2^n-1)*(2^m-1)$ supports. 
   * As in 6.3.3, the time complexity of computing NE of one support is highly depend on whether the two LP are feasible and the size of each support.
 
-## Analyze()
+### 6.5.2 Analyze()
 
 * If  method `Analyze()` is used to compute all the Nash Equilibria of a game, 
 
