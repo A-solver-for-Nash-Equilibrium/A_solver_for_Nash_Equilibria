@@ -10,7 +10,7 @@ Main steps:
 * Find all PNE based on column max and row max.
 * Do support numeration, and calculate mixed NE based on each support using gurobi.
 
-https://render.githubusercontent.com/render/math?math=O^n
+
 
 # 2. File structure
 
