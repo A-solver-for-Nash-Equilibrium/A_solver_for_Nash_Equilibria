@@ -489,10 +489,11 @@ class NESolver:
 
         # do support numeration without SDA
         support = support_numeration(new_A.index.values, new_B.columns.values)[2]
-        if n_PNE == 0:  # if no PNE, then neither player will have pure strategy in MNE
-            new_support = [s for s in support if len(s[0]) > 1 and len(s[1]) > 1]
-        else:  # delete PNE
-            new_support = [s for s in support if (len(s[0]) + len(s[1])) > 2]
+        # if n_PNE == 0:  # if no PNE, then neither player will have pure strategy in MNE
+        #     new_support = [s for s in support if len(s[0]) > 1 and len(s[1]) > 1]
+        # else:  # delete PNE
+        #     new_support = [s for s in support if (len(s[0]) + len(s[1])) > 2]
+        new_support = [s for s in support if (len(s[0]) + len(s[1])) > 2]
 
         # find mixed NE based on support numeration
         n_MNE = 0
@@ -592,7 +593,7 @@ def main():
     b = ['b1','b2']
     # b = (1,2,3)
     # b = [1,2,3]
-    NE = NESolver4(A, B,a,b)
+    NE = NESolver(A, B,a,b)
     NE.analyze()
 
 
