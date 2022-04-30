@@ -540,9 +540,9 @@ Implemented by `support_numeration()` and `powerset()`.
 
 * If  method `Analyze()` is used to compute all the Nash Equilibria of a game, 
 
-  * it will first delete all the strictly dominated actions (6.1), 
-  * then find pure Nash Equilibria without SDA (6.2), 
-  * conduct support numeration without SDA (6.4), 
+  * it will first delete all the actions strictly dominated by pure strategies (6.1), 
+  * then find pure Nash Equilibria based on updated action sets (6.2), 
+  * conduct support numeration based on updated action sets (6.4), 
     * will delete supports of pure strategy profile
     * will delete supports that containing one pure strategy if no PNE is found
   * and solve NE based on each support (6.3)
