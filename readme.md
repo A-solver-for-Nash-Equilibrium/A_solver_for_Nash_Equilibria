@@ -252,7 +252,7 @@ Example output:
 
 # 5. Code Structure
 
-![code structure](readme.assets/code structure.png)
+![code structure](readme.assets/code_structure.png)
 
 * Explanations of each method is within the code comment.
 
