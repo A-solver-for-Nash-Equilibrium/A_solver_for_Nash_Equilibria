@@ -252,7 +252,7 @@ Example output:
 
 # 5. Code Structure
 
-![image-20220216124354467](readme.assets/image-20220216124354467.png)
+![code structure](readme.assets/code structure.png)
 
 * Explanations of each method is within the code comment.
 
@@ -270,7 +270,7 @@ Example output:
 
 ## 6.1 Delete Strictly Dominated Actions (SDA)
 
-Implemented by `__find_one_strictly_dominated_action()` and `__recursively_delete_dominated_actions()`.
+**Only delete actions that are strictly dominated by pure strategies.** Implemented by `__find_one_strictly_dominated_action()` and `__recursively_delete_dominated_actions()`.
 
 **Main Idea:**
 
@@ -284,7 +284,7 @@ Implemented by `__find_one_strictly_dominated_action()` and `__recursively_delet
 
      It may be called more than once in one turn if there're multiple SDA in one turn. 
 
-**Principles (priority from high to low):**
+**Principles (priority from high to low):** 
 
 * Each player will be checked for at least once
 * Stop checking when either player don’t have a dominated action in her turn
@@ -299,6 +299,10 @@ Assume player1 has n actions and player2 has m actions. The payoff matrices A an
 | 1          | A             | F                  | n * m          | n * m         |
 | 2          | B             | T                  | n * m          | n * (m-1)     |
 | 3          | A             | T                  | n * (m-1)      | (n-1) * (m-1) |
+| 4          | B             |                    | (n-1) * (m-1)  | (n-1) * (m-2) |
+| 5          | A             |                    | (n-1) * (m-2)  | (n-2) * (m-2) |
+| 6          | B             |                    | (n-2) * (m-2)  | (n-2) * (m-3) |
+| 7          | A             |                    | (n-2) * (m-3)  | (n-3) * (m-3) |
 | ...        | ...           |                    |                |               |
 | n+m        | A or B        | T                  | 1 * 2 or 2 * 1 | 1 * 1         |
 
@@ -389,10 +393,10 @@ Suppose `I` is the set of action index in player1's support, `J` is the set of a
     | -------------------- | ---------------- | ----- |
     | x = [x_1, .., x_n].T | add n variables  | [1-1] |
     | w2                   | add 1 variable   | [1-2] |
-    | B*                   | add 1 variable   | [1-3] |
+    | B*                   | add n variable   | [1-3] |
     | x_1,…,x_n >= 0       | add n constraint | [1-4] |
     | x_1+x_2+..x_n=1      | add 1 constraint | [1-5] |
-    | B* = B.T  * y        | add n constraint | [1-6] |
+    | B* = B.T  * x        | add n constraint | [1-6] |
 
   * lpm_2
 
@@ -400,7 +404,7 @@ Suppose `I` is the set of action index in player1's support, `J` is the set of a
     | -------------------- | ---------------- | ----- |
     | y = [y_1, .., y_m].T | add m variables  | [2-1] |
     | w1                   | add 1 variable   | [2-2] |
-    | A*                   | add 1 variable   | [2-3] |
+    | A*                   | add m variable   | [2-3] |
     | y_1,…,y_m >= 0       | add m constraint | [2-4] |
     | y_1+y_2+..y_m=1      | add 1 constraint | [2-5] |
     | A* = A * y           | add m constraint | [2-6] |
